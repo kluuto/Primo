@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Primo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#E8EDEF;--card:#FBFCFC;--ink:#12304A;--mute:#5B6F7F;--line:#CBD6DB;--hot:#E2542B;--ok:#3E7B5C;--bad:#B3261E;--soft:#EEF3F5}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1B26;--card:#172938;--ink:#E6EEF2;--mute:#93A8B6;--line:#2A4054;--hot:#FF7048;--ok:#6FC39A;--bad:#FF8A80;--soft:#1D3345}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header.top{position:sticky;top:0;z-index:1000;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{font-size:1.35rem;font-weight:800;letter-spacing:-.03em}
+.chip{font:inherit;font-weight:700;padding:8px 14px;border-radius:99px;border:1px solid var(--hot);background:var(--hot);color:#fff;cursor:pointer}
+.chip.on{background:transparent;color:var(--ink);border-color:var(--line)}
+nav.tabs{display:flex;gap:6px;max-width:680px;margin:12px auto 0;padding:0 16px}
+nav.tabs button{flex:1;font-size:.88rem;padding:10px 4px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--mute);font:inherit;font-weight:700;cursor:pointer}
+nav.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main{max-width:680px;margin:0 auto;padding:12px 16px 56px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+h2{font-size:1.05rem;margin:0 0 8px}
+button,input,select,textarea{font:inherit;color:var(--ink)}
+.btn{display:block;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:transparent;font-weight:700;cursor:pointer;margin-top:8px}
+.btn.primary{background:var(--hot);border-color:var(--hot);color:#fff}.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.chip:focus-visible,nav.tabs button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#map,#cmap{height:290px;border-radius:12px;z-index:0}
+.start{padding:18px;font-size:1.25rem;border-radius:14px;margin-top:12px}
+.tagline{text-align:center;color:var(--mute);margin:8px 0 0}
+.note{color:var(--mute);font-size:.85rem}
+ul.checks{list-style:none;padding:0;margin:8px 0 0}ul.checks li{padding:6px 0;border-bottom:1px solid var(--line)}
+li.ok::before{content:"✓ ";color:var(--ok);font-weight:800}li.bad::before{content:"✕ ";color:var(--bad);font-weight:800}li small{color:var(--mute)}
+.big{font-size:2.2rem;font-weight:800;margin:6px 0 0;letter-spacing:-.02em}
+a{color:var(--hot)}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg button{flex:1;padding:9px 4px;border-radius:99px;border:1px solid var(--line);background:transparent;font-weight:700;color:var(--mute);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--hot);border-color:var(--hot);color:#fff}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-size:.85rem;font-weight:600}
+tr.me td{font-weight:800;color:var(--hot)}td.num{text-align:right}th.num{text-align:right}
+.row2{display:flex;gap:8px}.row2>*{flex:1;min-width:0}
+input[type=text],select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--soft)}
+.ev{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}.ev:last-child{border:0}
+.ev b{display:block}.pill{display:inline-block;font-size:.75rem;padding:1px 8px;border:1px solid var(--line);border-radius:99px;color:var(--mute);margin-top:4px}
+.ev button{width:auto;padding:8px 12px;margin:0;white-space:nowrap}
+.post{border-bottom:1px solid var(--line);padding:12px 0}.post:last-child{border:0}
+.post .meta{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem}
+.post img,.post svg.thumb{width:100%;height:190px;object-fit:cover;border-radius:10px;margin:8px 0;display:block}
+.like{background:none;border:0;color:var(--mute);cursor:pointer;padding:4px 0;font-weight:700}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:2000;max-width:90%;display:none}
+[hidden]{display:none!important}
+.leaflet-tooltip{font-weight:700}
+.ch h2{margin-bottom:2px}.ch .sp{color:var(--mute);font-size:.9rem}.ch .info{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.ch .info span{border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.82rem}
+.mine{background:var(--soft);border-radius:12px;padding:10px;margin:8px 0}.mine svg.thumb{height:130px;margin:6px 0 0}
+.fab{position:fixed;right:16px;bottom:18px;width:56px;height:56px;border-radius:50%;background:var(--hot);color:#fff;border:0;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:1500;cursor:pointer;display:grid;place-items:center}
+.fab:focus-visible,.sheet button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.sheet{position:fixed;left:12px;right:12px;bottom:84px;max-width:420px;margin-left:auto;max-height:72vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;z-index:1500;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.tile{background:var(--soft);border-radius:12px;padding:10px;text-align:center}.tile b{display:block;font-size:1.25rem}.tile span{font-size:.78rem;color:var(--mute)}
+.earn{font-size:2rem;font-weight:800;margin:4px 0 0}
+.badges{display:grid;grid-template-columns:1fr 1fr;gap:8px}.badge{border:1px solid var(--line);border-radius:12px;padding:8px;font-size:.85rem}.badge b{display:block}.badge.on{border-color:var(--ok);background:var(--soft)}.badge.off{opacity:.55}
+</style></head>
+<body>
+<header class="top"><span class="logo">Primo</span><span style="display:flex;gap:6px;align-items:center"><button class="chip" id="swap" hidden aria-label="Switch wallet account">Switch</button><button class="chip" id="chip">Connect wallet</button></span></header>
+<nav class="tabs" role="tablist" aria-label="Sections">
+<button role="tab" data-t="run" aria-selected="true">Run</button>
+<button role="tab" data-t="board" aria-selected="false">Leaderboard</button>
+<button role="tab" data-t="events" aria-selected="false">Events</button>
+<button role="tab" data-t="challenges" aria-selected="false">Challenges</button>
+</nav>
+<main>
+
+<!-- ============ TAB 1: RUN ============ -->
+<section id="run">
+<div class="card" id="walletCard"><h2>Connect your wallet</h2><p class="note" style="margin:0 0 4px">One tap. Prizes are paid straight to it in MON on Monad.</p>
+<button class="btn primary" id="connect2">Connect wallet</button></div>
+
+<div class="card"><h2 id="loopTitle">Draw your route</h2>
+<div id="map" role="img" aria-label="Map. Tap to draw your own running route."></div>
+<p class="note" id="dist" style="margin:8px 0 0">Tap the map to drop points and draw the route you want to run.</p>
+<div class="row2"><button class="btn" id="undo">Undo</button><button class="btn" id="clear">Clear</button></div>
+<button class="btn primary start" id="start">Start run</button>
+<button class="btn" id="gps">Track a real run with GPS</button>
+<p class="tagline"><b>Rarest route wins.</b> The streets fewer runners have run score higher.</p>
+<p class="note" id="prog" style="text-align:center;margin:6px 0 0"></p></div>
+
+<div class="card"><h2>Submit your run</h2>
+<input type="file" id="file" accept=".gpx" aria-label="Upload a GPX file" style="width:100%">
+<div class="row2"><button class="btn" id="sample">Random sample run</button><button class="btn" id="cheat">Fake driven run</button></div>
+<p class="note" id="loaded" style="margin:8px 0 0">No run loaded yet. Press Start run, upload a GPX file, or load a sample.</p>
+<button class="btn primary" id="submit" disabled>Verify and get paid</button>
+<button class="btn" id="clearRun">Clear run and result</button></div>
+
+<div class="card" id="out" hidden><h2>Result</h2><ul class="checks" id="checks"></ul><p class="big" id="score"></p><p id="pay" style="margin:6px 0 0"></p>
+<button class="btn" id="share" hidden>Share this run to the feed</button></div>
+</section>
+
+<!-- ============ TAB 2: LEADERBOARD ============ -->
+<section id="board" hidden>
+<div class="seg" role="group" aria-label="Leaderboard scope">
+<button data-s="city" aria-pressed="true">City</button><button data-s="hood" aria-pressed="false">Neighborhood</button><button data-s="friends" aria-pressed="false">Friends</button></div>
+<div class="card">
+<div id="hoodPick" hidden style="margin-bottom:10px"><label class="note" for="grid">Neighborhood grid (about 4 square miles, 2 × 2 mi)</label>
+<select id="grid"></select></div>
+<p class="note" id="scopeNote" style="margin:0 0 6px"></p>
+<table><thead><tr><th>#</th><th>Runner</th><th class="num">Rarity</th><th class="num">Pace</th></tr></thead><tbody id="lb"></tbody></table>
+<div id="friendAdd" hidden style="margin-top:12px"><h2>Add a friend</h2>
+<div class="row2"><input type="text" id="fname" placeholder="Name" aria-label="Friend name"><input type="text" id="fwallet" placeholder="Wallet (optional)" aria-label="Friend wallet address"></div>
+<button class="btn" id="fadd">Add friend</button>
+<p class="note">Add a wallet and their scores appear here once they submit a run. You’ll also be able to add runners you meet on a route.</p></div>
+<p class="note" style="margin:12px 0 0">Sample runners are demo data. Your runs and anyone who submits to this server are real.</p></div>
+</section>
+
+<!-- ============ TAB 3: EVENTS & SOCIAL ============ -->
+<section id="events" hidden>
+<div class="card"><h2>Upcoming events and races</h2><div id="evList"></div>
+<p class="note" style="margin:8px 0 0">Primo community events are demo listings. Check the organizer for official race dates.</p></div>
+
+<div class="card"><h2>Share a run</h2>
+<textarea id="cap" rows="2" placeholder="What did you run? Anything rare you found?" aria-label="Post caption"></textarea>
+<div class="row2" style="margin-top:8px"><select id="place" aria-label="Where you ran"></select><input type="file" id="photo" accept="image/*" aria-label="Add a photo"></div>
+<button class="btn primary" id="post">Post</button></div>
+
+<div class="card"><h2>What runners are up to</h2><div id="feed"></div>
+<p class="note" style="margin:8px 0 0">Sample posts are demo content. Your posts stay in this browser.</p></div>
+</section>
+<!-- ============ TAB 4: CHALLENGES ============ -->
+<section id="challenges" hidden>
+<div class="card"><h2>Brand challenges</h2>
+<p class="note" style="margin:0">A brand funds the prize. Everyone who joins races at the same time, but each runner gets a different route of about the same distance and difficulty, so no street gets crowded and nobody can scout the course. Finish times are normalized to 3.00 miles and the fastest wins.</p></div>
+<div id="chList"></div>
+<div class="card"><h2>Run a challenge for your brand</h2>
+<ul style="margin:6px 0 0;padding-left:20px"><li>You fund the MON prize pool and pick the finish line or checkpoint.</li><li>Runners get personalized routes that pass your store or café.</li><li>You get a results report: runners reached, visits, and sign-ups.</li></ul>
+<button class="btn primary" id="sponsorReq">Request a pilot</button></div>
+</section>
+</main>
+<button id="fab" class="fab" aria-label="Open wallet and stats" aria-expanded="false"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1.2" fill="currentColor"/></svg></button>
+<div id="sheet" class="sheet" role="dialog" aria-label="Your wallet and stats" hidden><div class="sheetHead"><b>Your wallet</b><button id="sheetClose" class="like" aria-label="Close wallet">✕</button></div><div id="sheetBody"></div></div>
+<div id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short=a=>a.slice(0,6)+'…'+a.slice(-4);
+const store={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const CHAIN={chainId:'0x279F',chainName:'Monad Testnet',nativeCurrency:{name:'MON',symbol:'MON',decimals:18},rpcUrls:['https://testnet-rpc.monad.xyz'],blockExplorerUrls:['https://testnet.monadscan.com']};
+const GRIDS=['Inner Sunset','Mission','Marina','Richmond'];
+let cfg,account=null,gpx=null,map,myLayer,runnerDot,running=false,runs=[],scope='city',grid='Inner Sunset',lastResult=null,activeChallenge=null;
+let route=null,routeGroup,routeUsed=false;const rid=store.get('rid',null)||(()=>{const v=Math.random().toString(36).slice(2)+Date.now().toString(36);store.set('rid',v);return v})();
+
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',4200)}
+
+/* ---------- tabs ---------- */
+function tab(t){document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t==t));
+ ['run','board','events','challenges'].forEach(id=>$(id).hidden=id!=t);
+ if(t=='run'&&map)setTimeout(()=>map.invalidateSize(),60);if(t=='board')loadBoard();if(t=='events')renderEvents();if(t=='challenges')renderChallenges()}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+
+/* ---------- wallet ---------- */
+async function onChain(){try{return (await ethereum.request({method:'eth_chainId'})).toLowerCase()===CHAIN.chainId.toLowerCase()}catch(e){return false}}
+async function ensureChain(){if(await onChain())return;
+ try{await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN.chainId}]})}
+ catch(e){if(e.code===4902||e.code===-32603){await ethereum.request({method:'wallet_addEthereumChain',params:[CHAIN]})}else throw e}}
+function paint(){const c=$('chip');c.textContent=account?short(account):'Connect wallet';c.className='chip'+(account?' on':'');$('swap').hidden=!account;
+ $('walletCard').hidden=!!account;$('submit').disabled=!(account&&gpx)}
+async function connect(){if(!window.ethereum){toast('Install MetaMask or another EVM wallet first.');return false}
+ try{account=(await ethereum.request({method:'eth_requestAccounts'}))[0];paint();await ensureChain();toast('Connected to Monad Testnet');return true}
+ catch(e){paint();toast('Wallet: '+(e.message||e));return !!account}}
+async function switchWallet(){if(!window.ethereum){toast('Install MetaMask first.');return}
+ try{await ethereum.request({method:'wallet_requestPermissions',params:[{eth_accounts:{}}]});const a=await ethereum.request({method:'eth_requestAccounts'});account=a[0]||null;paint();await ensureChain();toast('Now using '+short(account));if(!$('board').hidden)renderBoard()}
+ catch(e){toast('Wallet: '+(e.message||e))}}
+function clearRun(){gpx=null;lastResult=null;if(myLayer){map.removeLayer(myLayer);myLayer=null}$('out').hidden=true;$('submit').textContent='Verify and get paid';$('file').value='';$('loaded').textContent='No run loaded yet. Press Start run, upload a GPX file, or load a sample.';$('prog').textContent='';paint()}
+$('swap').onclick=switchWallet;$('sheetBody').addEventListener('click',e=>{if(e.target.id=='sheetSwap'){e.preventDefault();switchWallet().then(renderSheet)}});$('clearRun').onclick=clearRun;
+$('chip').onclick=()=>{if(!account)connect();else switchWallet()};$('connect2').onclick=connect;
+if(window.ethereum){ethereum.request({method:'eth_accounts'}).then(a=>{if(a[0]){account=a[0];paint()}}).catch(()=>{});
+ ethereum.on&&ethereum.on('accountsChanged',a=>{account=a[0]||null;paint();if(!$('board').hidden)renderBoard()})}
+
+/* ---------- map ---------- */
+function addTiles(m){const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(m);
+ let bad=0;osm.on('tileerror',()=>{if(++bad==4){m.removeLayer(osm);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(m)}})}
+let pts=[],drawLayer,gpsWatch=null,gpsPts=[];
+function initMap(){map=L.map('map');addTiles(map);map.setView([37.7621,-122.4660],14);drawLayer=L.layerGroup().addTo(map);
+ runnerDot=L.circleMarker([37.76,-122.45],{radius:7,color:'#fff',weight:3,fillColor:'#E2542B',fillOpacity:1});
+ map.on('click',e=>{if(running)return;pts.push([e.latlng.lat,e.latlng.lng]);redraw()})}
+function lenMi(p){let m=0;for(let i=1;i<p.length;i++)m+=map.distance(p[i-1],p[i]);return m/1609.344}
+function redraw(){drawLayer.clearLayers();if(myLayer){map.removeLayer(myLayer);myLayer=null}
+ if(pts.length>1)L.polyline(pts,{color:'#4285F4',weight:6,opacity:.9}).addTo(drawLayer);
+ pts.forEach((p,i)=>L.circleMarker(p,{radius:i?5:8,color:'#fff',weight:2,fillColor:i?'#34A853':'#EA4335',fillOpacity:1}).addTo(drawLayer));
+ const mi=lenMi(pts);$('dist').textContent=pts.length<2?'Tap the map to drop points and draw the route you want to run.':'Your route: '+mi.toFixed(2)+' mi'+(mi<1?' (needs at least 1 mi to count)':mi>8?' (max 8 mi)':'');
+ $('loopTitle').textContent=pts.length>1?'Your route · '+mi.toFixed(1)+' mi':'Draw your route'}
+$('undo').onclick=()=>{if(!running){pts.pop();redraw()}};$('clear').onclick=()=>{if(!running){pts=[];redraw()}};
+function toGpx(p){const t0=Date.now()-lenMi(p)*1609.344/2.8*1000;let t=t0,out=[];
+ for(let s=0;s<p.length-1;s++){const d=map.distance(p[s],p[s+1]),n=Math.max(1,Math.round(d/14));
+  for(let i=0;i<n;i++){const f=i/n;out.push([p[s][0]+(p[s+1][0]-p[s][0])*f+(Math.random()-.5)*3e-5,p[s][1]+(p[s+1][1]-p[s][1])*f+(Math.random()-.5)*3e-5,t]);t+=5000}}
+ out.push([p.at(-1)[0],p.at(-1)[1],t]);return out}
+function gpxFrom(a){return '<?xml version="1.0"?><gpx version="1.1" creator="primo"><trk><trkseg>'+a.map(q=>`<trkpt lat="${q[0].toFixed(6)}" lon="${q[1].toFixed(6)}"><time>${new Date(q[2]).toISOString()}</time></trkpt>`).join('')+'</trkseg></trk></gpx>'}
+function drawMine(){if(myLayer)map.removeLayer(myLayer);
+ const pts=[...gpx.matchAll(/<trkpt[^>]*lat="([^"]+)"[^>]*lon="([^"]+)"/g)].map(m=>[+m[1],+m[2]]);
+ if(pts.length)myLayer=L.polyline(pts,{color:'#E2542B',weight:4,opacity:.95}).addTo(map)}
+
+/* ---------- start run (simulated) ---------- */
+function dense(c){const o=[];for(let s=0;s<c.length-1;s++)for(let i=0;i<40;i++){const f=i/40;o.push([c[s].lat+(c[s+1].lat-c[s].lat)*f,c[s].lon+(c[s+1].lon-c[s].lon)*f])}o.push([c.at(-1).lat,c.at(-1).lon]);return o}
+async function startRun(){if(running)return;if(pts.length<2||lenMi(pts)<1){toast('Draw a route of at least 1 mile first.');return}
+ if(!account&&!(await connect()))return;
+ running=true;$('start').disabled=true;$('start').textContent='Running…';if(myLayer){map.removeLayer(myLayer);myLayer=null}
+ const track=toGpxTrack();runnerDot.addTo(map);let i=0;const tot=lenMi(pts);
+ await new Promise(res=>{const t=setInterval(()=>{const q=track[Math.min(i,track.length-1)];runnerDot.setLatLng([q[0],q[1]]);$('prog').textContent='Running… '+(tot*i/track.length).toFixed(2)+' mi';i+=Math.max(1,Math.floor(track.length/150));if(i>=track.length){clearInterval(t);res()}},40)});
+ map.removeLayer(runnerDot);gpx=gpxFrom(track);drawMine();$('loaded').textContent='Your tracked run is loaded ('+tot.toFixed(2)+' mi).';paint();
+ $('prog').textContent='Finished. Verify your run below to get your rarity score and payout.';
+ $('start').disabled=false;$('start').textContent='Start run again';running=false;$('submit').scrollIntoView({behavior:'smooth',block:'center'})}
+function toGpxTrack(){return toGpx(pts)}
+$('start').onclick=startRun;
+$('gps').onclick=()=>{if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;$('gps').textContent='Track a real run with GPS';
+  if(gpsPts.length>=20){gpx=gpxFrom(gpsPts);drawMine();$('loaded').textContent='GPS run loaded ('+gpsPts.length+' points).';paint();$('prog').textContent='GPS run finished. Verify it below.'}else toast('Not enough GPS points yet.');return}
+ if(!navigator.geolocation){toast('GPS is not available on this device.');return}
+ gpsPts=[];gpsWatch=navigator.geolocation.watchPosition(p=>{gpsPts.push([p.coords.latitude,p.coords.longitude,p.timestamp]);$('prog').textContent='Tracking… '+gpsPts.length+' points. Tap again to finish.'},e=>toast('GPS: '+e.message),{enableHighAccuracy:true});
+ $('gps').textContent='Finish GPS run'};
+
+/* ---------- samples and submit ---------- */
+async function loadSample(mode,tier){$('out').hidden=true;const r=await fetch('/api/sample-gpx?mode='+mode+'&rid='+rid+(tier?'&tier='+tier:''));gpx=await r.text();const style=r.headers.get('x-sample-tier');drawMine();
+ $('loaded').textContent=mode=='run'?'Loaded a sample run. Route style: '+style+'. Rarer styles take less common streets.':'Loaded a fake driven run. It should be rejected.';paint()}
+$('sample').onclick=()=>loadSample('run');$('cheat').onclick=()=>loadSample('drive');
+$('file').onchange=async e=>{if(!e.target.files[0])return;$('out').hidden=true;gpx=await e.target.files[0].text();drawMine();$('loaded').textContent='Loaded '+e.target.files[0].name;paint()};
+$('submit').onclick=async()=>{$('submit').disabled=true;$('submit').textContent='Verifying…';
+ let d;try{d=await (await fetch('/api/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({gpx,runner:account,rid:activeChallenge?rid:''})})).json()}catch(e){d={error:'Could not reach the server.'}}
+ lastResult=d;$('out').hidden=false;$('share').hidden=true;
+ $('checks').innerHTML=(d.checks||[]).map(c=>`<li class="${c.ok?'ok':'bad'}">${esc(c.name)} <small>${esc(c.detail)}</small></li>`).join('');
+ if(d.error){$('checks').innerHTML=`<li class="bad">${esc(d.error)}</li>`;$('score').textContent='';$('pay').textContent=''}
+ else if(!d.verified){$('score').textContent='Not verified';$('pay').textContent='No payout. Fix the failed checks and try again.'}
+ else{$('score').textContent='Rarity '+d.score;$('share').hidden=false;pts=[];redraw();
+  if(activeChallenge){const c=CHALLENGES.find(x=>x.id==activeChallenge);store.set('result_'+activeChallenge,{pace:d.pace,score:d.score});toast('Your time was added to the '+c.n+' standings.');activeChallenge=null}
+  $('pay').innerHTML=d.tx?`Paid ${esc(d.paid)} MON. <a target="_blank" rel="noopener" href="${esc(d.explorer)}/tx/${esc(d.tx)}">View transaction</a>`:esc(d.payError||(d.dry?'Dry run: verified, no payout sent.':''))}
+ $('submit').textContent='Verify and get paid';gpx=null;$('loaded').textContent='Load another run to submit again.';paint();$('out').scrollIntoView({behavior:'smooth',block:'nearest'})};
+$('share').onclick=()=>{tab('events');$('cap').value='Ran today’s loop. Rarity '+lastResult.score+' at '+lastResult.pace+' min/mi.';$('cap').focus()};
+
+/* ---------- leaderboard ---------- */
+const DEMO=[{n:'Maya T.',s:88,p:8.9,g:'Inner Sunset',f:1},{n:'Jon O.',s:81,p:9.3,g:'Mission'},{n:'Ana R.',s:77,p:10.1,g:'Inner Sunset',f:1},{n:'Kenji L.',s:72,p:8.4,g:'Marina'},
+ {n:'Dee S.',s:69,p:9.9,g:'Richmond'},{n:'Pat N.',s:64,p:11.2,g:'Mission'},{n:'Sam W.',s:58,p:10.7,g:'Inner Sunset',f:1},{n:'Lu H.',s:55,p:9.6,g:'Richmond'},
+ {n:'Rio C.',s:49,p:12.0,g:'Marina'},{n:'Tess B.',s:41,p:10.3,g:'Inner Sunset'}];
+async function loadBoard(){try{runs=await (await fetch('/api/leaderboard')).json()}catch(e){runs=[]}renderBoard()}
+function realRows(){const best={},me=account?short(account).toLowerCase():'';
+ runs.forEach(r=>{const k=r.runner.toLowerCase();if(!best[k]||r.score>best[k].s)best[k]={k,s:r.score,p:r.pace,g:'Inner Sunset',me:k==me,n:k==me?'You':r.runner}});return Object.values(best)}
+function renderBoard(){const real=realRows();let rows=[],note='';
+ if(scope=='city'){rows=DEMO.map(d=>({...d})).concat(real);note='Every runner in San Francisco, ranked by rarity.'}
+ else if(scope=='hood'){rows=DEMO.filter(d=>d.g==grid).map(d=>({...d})).concat(grid=='Inner Sunset'?real:[]);note=grid+' grid. Rarity is scored against runners in the same 4-square-mile grid.'}
+ else{const fr=store.get('friends',[]);rows=DEMO.filter(d=>d.f).map(d=>({...d})).concat(real.filter(r=>r.me));
+  fr.forEach(f=>{const m=f.wallet?real.find(r=>r.k==short(f.wallet).toLowerCase()):null;rows.push({n:f.name,s:m?m.s:null,p:m?m.p:null,fr:f})});note='You and the runners you’ve added or met.'}
+ rows.sort((a,b)=>(b.s??-1)-(a.s??-1));$('scopeNote').textContent=note;
+ $('lb').innerHTML=rows.length?rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td>${esc(r.n)}${r.fr?` <button class="like" data-rm="${esc(r.fr.name)}" aria-label="Remove ${esc(r.fr.name)}">remove</button>`:''}</td><td class="num">${r.s==null?'no runs yet':r.s}</td><td class="num">${r.p==null?'-':r.p+' min/mi'}</td></tr>`).join(''):'<tr><td colspan="4" class="note">No runners yet.</td></tr>';
+ document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{store.set('friends',store.get('friends',[]).filter(f=>f.name!=b.dataset.rm));renderBoard()});
+ $('hoodPick').hidden=scope!='hood';$('friendAdd').hidden=scope!='friends'}
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{scope=b.dataset.s;document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x==b));renderBoard()});
+$('grid').innerHTML=GRIDS.map(g=>`<option>${g}</option>`).join('');$('grid').onchange=e=>{grid=e.target.value;renderBoard()};
+$('fadd').onclick=()=>{const name=$('fname').value.trim(),wallet=$('fwallet').value.trim();if(!name)return toast('Enter a name.');
+ if(wallet&&!/^0x[0-9a-fA-F]{40}$/.test(wallet))return toast('That wallet address looks wrong.');
+ store.set('friends',store.get('friends',[]).concat({name,wallet}));$('fname').value='';$('fwallet').value='';renderBoard()};
+
+/* ---------- events and social ---------- */
+const EVENTS=[
+ {k:'sfm',n:'The San Francisco Marathon weekend',d:'Jul 24–25, 2027 · full marathon Sun Jul 25, 5:15 a.m. start',t:'Official race'},
+ {k:'b2b',n:'Bay to Breakers',d:'Usually mid-May · 2027 date to be confirmed',t:'Official race'},
+ {k:'secret',n:'Saturday Secret Run',d:'Saturdays · 8 a.m. · a different loop for every runner',t:'Primo community (demo)'},
+ {k:'social',n:'Sunset Social Run + coffee',d:'Sundays · 9 a.m. · group run ending at a sponsor café',t:'Primo community (demo)'}];
+function renderEvents(){const on=store.get('interested',[]);
+ $('evList').innerHTML=EVENTS.map(e=>`<div class="ev"><div><b>${esc(e.n)}</b><span class="note">${esc(e.d)}</span><br><span class="pill">${esc(e.t)}</span></div>
+ <button class="btn ${on.includes(e.k)?'primary':''}" data-ev="${e.k}" aria-pressed="${on.includes(e.k)}">${on.includes(e.k)?'Going':'Interested'}</button></div>`).join('');
+ document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{const cur=store.get('interested',[]);store.set('interested',cur.includes(b.dataset.ev)?cur.filter(x=>x!=b.dataset.ev):cur.concat(b.dataset.ev));renderEvents()});
+ renderFeed()}
+function thumb(seed){let x=seed*9301+49297;const rnd=()=>{x=(x*9301+49297)%233280;return x/233280};
+ let d='M20 '+(120+rnd()*40);for(let i=1;i<=7;i++)d+=' L'+(20+i*40)+' '+(30+rnd()*130);
+ const hue=190+Math.floor(rnd()*60);
+ return `<svg class="thumb" viewBox="0 0 300 190" role="img" aria-label="Route sketch"><rect width="300" height="190" fill="hsl(${hue},40%,82%)"/><path d="M0 60H300M0 130H300M70 0V190M160 0V190M240 0V190" stroke="hsl(${hue},30%,92%)" stroke-width="10" fill="none"/><path d="${d}" stroke="#E2542B" stroke-width="5" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`}
+const SEED_POSTS=[{n:'Maya T.',w:'Inner Sunset',c:'Found a stairway cut-through nobody had run. Rarity 88.',s:1},{n:'Jon O.',w:'Mission',c:'Sunrise lap on empty streets before work.',s:2},
+ {n:'Kenji L.',w:'Marina',c:'Added a Crissy Field detour. Worth the extra 0.2 mi.',s:3},{n:'Dee S.',w:'Richmond',c:'Foggy Clement St loop. Rarity 69.',s:4}];
+let photos={};
+function renderFeed(){const mine=store.get('posts',[]),likes=store.get('likes',{});
+ const all=mine.map((p,i)=>({...p,mine:1,id:'m'+p.id})).concat(SEED_POSTS.map(p=>({...p,id:'s'+p.s})));
+ $('feed').innerHTML=all.map(p=>`<div class="post"><div class="meta"><b>${esc(p.mine?'You':p.n)}</b><span>${esc(p.w)}</span></div>
+ ${p.mine&&photos[p.id]?`<img src="${photos[p.id]}" alt="Photo from your run">`:thumb(p.mine?p.id.length*7+(+p.id.slice(1)%97):p.s)}
+ <div>${esc(p.c)}</div><button class="like" data-like="${p.id}">♥ ${(likes[p.id]||0)+(p.mine?0:p.s*3)}</button></div>`).join('');
+ document.querySelectorAll('[data-like]').forEach(b=>b.onclick=()=>{const l=store.get('likes',{});l[b.dataset.like]=(l[b.dataset.like]||0)+1;store.set('likes',l);renderFeed()})}
+$('place').innerHTML=GRIDS.map(g=>`<option>${g}</option>`).join('');
+$('post').onclick=async()=>{const c=$('cap').value.trim();if(!c)return toast('Write a caption first.');
+ const id=Date.now();const f=$('photo').files[0];if(f)photos['m'+id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
+ store.set('posts',[{id,w:$('place').value,c}].concat(store.get('posts',[])).slice(0,20));$('cap').value='';$('photo').value='';renderFeed();toast('Posted.')};
+
+
+/* ---------- brand challenges ---------- */
+const TIERS=['common','uncommon','rare','legendary'];
+const CHALLENGES=[
+ {id:'sprint',n:'Saturday Sunset Sprint',b:'Sunset Running Co. (demo sponsor)',prize:'40 MON + gear voucher',when:'Sat · 8–11 a.m. window',joined:38,
+  racers:[['Maya T.','rare',24.6],['Ana R.','common',25.9],['Kenji L.','legendary',27.1],['Jon O.','uncommon',28.4],['Pat N.','common',29.7],['Dee S.','rare',31.0]]},
+ {id:'coffee',n:'Coffee Crawl 5K',b:'Corner Café (demo sponsor)',prize:'25 MON + a month of free coffee',when:'Sun · 9 a.m.–12 p.m. window',joined:21,
+  racers:[['Sam W.','uncommon',26.2],['Lu H.','rare',27.8],['Rio C.','common',30.4],['Tess B.','legendary',32.9]]}];
+const mmss=m=>Math.floor(m)+':'+String(Math.round((m-Math.floor(m))*60)).padStart(2,'0');
+function renderChallenges(){const joined=store.get('joined',[]);
+ $('chList').innerHTML=CHALLENGES.map(c=>{const j=joined.includes(c.id),tier=store.get('route_'+c.id,null),res=store.get('result_'+c.id,null);
+  const rows=c.racers.map(r=>({n:r[0],t:r[1],m:r[2]}));if(res)rows.push({n:'You',t:tier||'-',m:res.pace*3,me:1});rows.sort((a,b)=>a.m-b.m);
+  return `<div class="card ch"><h2>${esc(c.n)}</h2><div class="sp">Sponsored by ${esc(c.b)}</div>
+  <div class="info"><span>Prize: ${esc(c.prize)}</span><span>${esc(c.when)}</span><span>${c.joined+(j?1:0)} runners, ${c.joined+(j?1:0)} different routes</span></div>
+  ${j?`<div class="mine"><b>Your route: ${esc(tier)} style, about 3 mi</b><div class="note">Different from every other runner’s, same distance band.</div>${thumb([...(c.id+tier)].reduce((a,x)=>a+x.charCodeAt(0),0))}</div>
+   <button class="btn primary" data-race="${c.id}">${res?'Run it again':'Start race'}</button>`:`<button class="btn primary" data-join="${c.id}">Join the race</button>`}
+  <table style="margin-top:10px"><thead><tr><th>#</th><th>Runner</th><th>Route</th><th class="num">3-mi time</th></tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td>${esc(r.n)}</td><td>${esc(r.t)}</td><td class="num">${mmss(r.m)}</td></tr>`).join('')}</tbody></table>
+  <p class="note" style="margin:8px 0 0">Sample racers are demo data. Prize payout is simulated in this demo.</p></div>`}).join('');
+ document.querySelectorAll('[data-join]').forEach(b=>b.onclick=async()=>{if(!account&&!(await connect()))return;const id=b.dataset.join;
+  store.set('joined',store.get('joined',[]).concat(id));store.set('route_'+id,TIERS[Math.floor(Math.random()*TIERS.length)]);renderChallenges();toast('You’re in. Your route has been assigned.')});
+ document.querySelectorAll('[data-race]').forEach(b=>b.onclick=()=>{activeChallenge=b.dataset.race;const c=CHALLENGES.find(x=>x.id==activeChallenge);tab('run');
+  $('prog').textContent='Racing: '+c.n+' · route style '+store.get('route_'+activeChallenge,'')+'. Press Start run.'})}
+$('sponsorReq').onclick=()=>toast('Demo: this would send a pilot request to the Primo team.');
+
+/* ---------- wallet panel ---------- */
+const ACH=[
+ {n:'First steps',d:'Finish your first verified run',t:s=>s.runs>=1},
+ {n:'Three-peat',d:'Finish 3 verified runs',t:s=>s.runs>=3,p:s=>s.runs+'/3'},
+ {n:'10-mile club',d:'Run 10 miles in total',t:s=>s.miles>=10,p:s=>s.miles+'/10 mi'},
+ {n:'Rare finder',d:'Score 70 or more rarity',t:s=>s.best>=70,p:s=>'best '+s.best},
+ {n:'Legend',d:'Score 85 or more rarity',t:s=>s.best>=85,p:s=>'best '+s.best},
+ {n:'Paid in MON',d:'Earn your first MON',t:s=>s.earned>0},
+ {n:'Quick feet',d:'Run under 9 min/mi',t:s=>s.fastest!=null&&s.fastest<9,p:s=>s.fastest?s.fastest+' min/mi':''}];
+async function walletBal(){try{if(!account||!(await onChain()))return null;const hx=await ethereum.request({method:'eth_getBalance',params:[account,'latest']});return Number(BigInt(hx)/10n**14n)/1e4}catch(e){return null}}
+async function renderSheet(){const b=$('sheetBody');
+ if(!account){b.innerHTML='<p class="note">Connect a wallet to see what you have earned.</p><button class="btn primary" id="sheetConnect">Connect wallet</button>';$('sheetConnect').onclick=async()=>{await connect();renderSheet()};return}
+ b.innerHTML='<p class="note">Loading…</p>';
+ let st={runs:0,miles:0,earned:0,best:0,fastest:null,txs:[]};
+ try{st=await (await fetch('/api/stats?runner='+account)).json()}catch(e){}
+ const bal=await walletBal();
+ b.innerHTML=`<p class="note" style="margin:0">${esc(short(account))} · Monad Testnet · <a href="#" id="sheetSwap">Switch wallet</a></p>
+ <p class="earn">${st.earned} MON</p><p class="note" style="margin:0">earned from Primo runs${bal==null?'':' · wallet balance '+bal+' MON'}</p>
+ <div class="tiles"><div class="tile"><b>${st.miles}</b><span>miles run</span></div><div class="tile"><b>${st.runs}</b><span>verified runs</span></div><div class="tile"><b>${st.best||'-'}</b><span>best rarity</span></div></div>
+ <h2>Accomplishments</h2><div class="badges">${ACH.map(a=>{const on=a.t(st);return `<div class="badge ${on?'on':'off'}"><b>${on?'✓ ':''}${esc(a.n)}</b>${esc(a.d)}${!on&&a.p?'<br><small>'+esc(a.p(st))+'</small>':''}</div>`}).join('')}</div>
+ ${st.txs.length?'<h2 style="margin-top:12px">Recent payouts</h2>'+st.txs.map(t=>`<div class="note"><a target="_blank" rel="noopener" href="${esc(cfg.explorer)}/tx/${esc(t.tx)}">${t.paid} MON · view transaction</a></div>`).join(''):''}`}
+function sheet(open){$('sheet').hidden=!open;$('fab').setAttribute('aria-expanded',open);if(open)renderSheet()}
+$('fab').onclick=()=>sheet($('sheet').hidden);$('sheetClose').onclick=()=>{sheet(false);$('fab').focus()};
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&!$('sheet').hidden)sheet(false)});
+
+/* ---------- init ---------- */
+(async()=>{cfg=await (await fetch('/api/config')).json();initMap();redraw();paint()})();
+</script></body></html>
