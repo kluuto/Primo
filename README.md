@@ -1,6 +1,6 @@
 # Primo
 
-Run the streets fewer people run. Primo is a Krillion-style running game on **Monad testnet**: draw your own route, run it, and a verifier scores how rare your streets are. Verified runs are paid in MON instantly by a Solidity pool contract. Prizes are sponsor-funded (no token sale). Pilot city: San Francisco.
+Run the streets fewer people run. Primo is a running app on **Monad testnet**: draw your own route, run it, and a verifier scores how rare your streets are. Verified runs are paid in MON instantly by a Solidity pool contract. Prizes are sponsor-funded (no token sale). Pilot city: San Francisco.
 
 ## What it does
 - **Run tab:** draw your own route on the map, run it (simulated or live GPS), get a rarity score and an instant MON payout.
